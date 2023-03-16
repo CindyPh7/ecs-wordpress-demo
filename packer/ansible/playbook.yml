@@ -1,0 +1,57 @@
+- name: Install WordPress
+  hosts: all
+  become: true
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Update apt packages
+      apt:
+        upgrade: dist
+
+    - name: Enable rewrite module
+      shell: /usr/sbin/a2enmod rewrite
+
+    - name: Download and Extract WorPress
+      unarchive:
+        src: https://wordpress.org/latest.tar.gz
+        dest: /var/www/
+        remote_src: yes
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+
+    - name: Update default Apache site
+      lineinfile:
+        path: /etc/apache2/sites-enabled/000-default.conf
+        state: present
+        regexp: '(.)+DocumentRoot /var/www/html'
+        line: 'DocumentRoot /var/www/wordpress'
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+
+    - name: Set WordPress directory permissions
+      file:
+        path: /var/www/wordpress
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Update wp-config.php file
+      copy:
+        src: wordpress/templates/wp-config.php
+        dest: /var/www/wordpress/wp-config.php
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+
+    - name: Start Apache
+      service:
+        name: apache2   
+        state: started
