@@ -15,7 +15,7 @@ Terraform provision the AWS Infrastructure to host and run the Wordpress instanc
 
 1. network.tf to create:
     - VPC and its attached Internet Gateway
-    - Public (for ECS) instance and Private subnet (for RDS)
+    - Public subnet (for ECS) and 2 private subnets (for RDS) as it needs two availability zone.
     - Security Groups
 2. secret-manager.tf to create and store:
     - RDS instance db password
@@ -62,28 +62,37 @@ Packer will create the Wordpress docker image. Its folder contains:
 
     `{aws_account_id}.dkr.ecr.{region}.amazonaws.com/{repository}`
 
-    `example: 1234.dkr.ecr.us-west-1.amazonaws.com`
+    `example: 1234.dkr.ecr.us-west-1.amazonaws.com/wordpress-demo-ecr/wordpress`
 
 6. Go to Packer folder and run
     `cd ../packer`
 
     `packer builder .`
 
-## Components
+## What components interact with each other
 
 The project includes the following components:
 
-- Packer with Ansible provisionner
-- Terraform
-- AWS Secret Manager
-- AWS ECR
-- AWS RDS
-- AWS ECS
+- Packer with Ansible provisionner to create our custom Wordpress image.
+- Terraform to provision the infrastructure on AWS.
+- AWS Secret Manager to generate and store sensitive data.
+- AWS ECR to store our docker images.
+- AWS RDS as database.
+- AWS ECS to run Wordpress containers.
+
+I first run Terraform code to provision the infrastructure part: 
+It will deploy the VPC in the region of my choice (us-west-1), and set up a public subnet and a private subnet in the avaibility zone a (us-west-1a), and an additionnal private subnet in the avaibility zone b (us-west-1b).  I will also create the "wordpress_sg" security group to allow http traffic (port 80), and "rds_sg" security group to allow traffic to the RDS (port 3306) as ingress, and egress for each.
+Secret Manager will create will generate a random Secret and store it. It will do the same for Wordpress Salts, by generating a 64-bit length secret for each environment variables to set (for the wp-config.php file).
+It will create a definition task to define specs of the service that we want to deploy and the service that will execute the task.
+And then, the ECR will be created to be able to push the docker iamge to out registry. 
+
+By running Packer, it will create the image and push it to the ECR. Because the ECS is already deployed with the infrastructure, it will launch the service once it get the image.
+
 
 ## Encountered Problems
 
 
-I have encountered problems while creating the Wordpress container image with Packer and Ansible provisionner.
+I have encountered problems while creating the Wordpress container image with Packer and Ansible provisionner as it's not common to create docker images with Packer.
 
 I also had issues with the ECS task definition and ECS service to get the proper rights to run service and pull the image from the ECR.
 
@@ -94,12 +103,14 @@ I have first set up the project with an Application Load Balancer but I had rout
 To achieve the best HA/automated architecture, it is recommended to:
 
 - Implement auto-scaling to automatically adjust the number of ECS instances based on demand.
+- Set up Wordpress static on S3
 
 ## Ideas for Improving Infrastructure
 
 To improve the infrastructure, it is recommended to:
 
-- Use Load balancer to set up SSL.
+- Use Load balancer to set up SSL and split traffic.
+- Improve networking rules to secure. In the RDS security group, if we cannot predict a fix IP for running Wordpress services, we may allow only the public subnet range CIDR.
 - Use a backend for Terraform tfstate (can be stored on a S3 bucket) to prevent multiple terraform runs and get one source of trust.
 - Refactor the Terraform code into modules to re-use the code of each component for other project or if it needs to be deployed in different environments (DEV, QA, PROD).
 - Implement monitoring and logging solutions such as AWS CloudWatch or Prometheus Grafana to gain insights into application performance and troubleshoot issues.
