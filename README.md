@@ -8,6 +8,7 @@ The development of this project is still in progress. Remaining tasks to make it
 
 ## Approach
 
+<img width="771" alt="ecs-terraform-packer" src="https://user-images.githubusercontent.com/46226051/225768628-32fa9394-4990-4458-a0d5-4fc04cb40336.png">
 
 
 Terraform provision the AWS Infrastructure to host and run the Wordpress instance:
