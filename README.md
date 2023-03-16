@@ -4,7 +4,7 @@
 
 This project sets up a WordPress container on an ECS cluster using Terraform to provision the infrastructure on AWS, and Packer with Ansible provisionner to create the Wordpress docker images and use RDS as Database.
 
-The development of this project is still in progress. Remaining tasks to make it work is to create a proper docker image of the Wordpress, and add the proper configuration to make the ECS Wordpress to use the RDS as database.
+The development of this project is still in progress. Remaining tasks left to make it work are to create a proper docker image of the Wordpress, and add the proper configuration to make the ECS Wordpress to use the RDS as database.
 
 ## Approach
 
